@@ -25,29 +25,19 @@ def get_similarity_matrix(embeddings_tensor: torch.Tensor):
 
 
 def softmax_loss(embeddings_tensor: torch.Tensor):
-    num_of_speaker = embeddings_tensor.shape[0]
-    num_utterance_for_a_speaker = embeddings_tensor.shape[1]
     similarity_matrix = get_similarity_matrix(embeddings_tensor)
 
-    loss_matrix = torch.zeros(
-        num_of_speaker, num_utterance_for_a_speaker)
     # dim=1 refers to utterence number
     # dim=0 refers to speaker number
 
-    sum_of_exps = torch.zeros(
-        num_of_speaker, num_utterance_for_a_speaker)
-    for k in range(num_of_speaker):
-        sum_of_exps += np.exp(similarity_matrix[:][:][k])
-    np.log(sum_of_exps)
+    x_indices = np.arange(similarity_matrix.shape[0]).reshape(-1, 1)
+    y_indices = np.arange(similarity_matrix.shape[1] )
 
-    loss_matrix = torch.zeros(
-        num_of_speaker, num_utterance_for_a_speaker)
-    for j in range(num_of_speaker):
-        for i in range(num_utterance_for_a_speaker):
-            loss_matrix[j][i] = -similarity_matrix[j][i][j] + \
-                np.log(sum_of_exps[j][i])
+    # Use broadcasting to obtain S_prime
+    S_j_i_j = similarity_matrix[x_indices, y_indices, x_indices]
 
-    return loss_matrix
+    return torch.log(torch.exp(similarity_matrix).sum(dim=2)) - S_j_i_j
+
 
 
 def contrast_loss(embeddings_tensor: torch.Tensor):
